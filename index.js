@@ -6,7 +6,7 @@ const { Pool } = require("pg");
 const app = express();
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL
 });
 
 app.use(cors());
@@ -89,6 +89,7 @@ app.get("/dashboard", (req, res) => {
       padding:10px 15px;
       border-radius:10px;
       cursor:pointer;
+      margin:5px;
     }
 
     button:hover{
@@ -114,9 +115,9 @@ app.get("/dashboard", (req, res) => {
 
   <br>
 
-  <a href="/journals">
-    <button>📖 View Journals</button>
-  </a>
+  <a href="/journals"><button>📖 View Journals</button></a>
+  <a href="/analytics"><button>📊 Analytics</button></a>
+  <a href="/breathing"><button>🌬️ Breathing Tool</button></a>
 
   </body>
   </html>
@@ -128,7 +129,7 @@ app.get("/dashboard", (req, res) => {
 app.get("/journals", async (req, res) => {
   const result = await pool.query("SELECT * FROM journals ORDER BY id DESC");
 
-  const emoji = (m) => (m >= 8 ? "😄" : m >= 5 ? "🙂" : "😔");
+  const emoji = (m) => m>=8?"😄":m>=5?"🙂":"😔";
 
   let html = `
   <html>
@@ -179,8 +180,8 @@ app.get("/journals", async (req, res) => {
   <div class="container">
   `;
 
-  result.rows.forEach((j) => {
-    html += `
+  result.rows.forEach(j=>{
+    html+=`
     <div class="card">
       <h3>${j.title}</h3>
       <p>${j.content}</p>
@@ -191,11 +192,11 @@ app.get("/journals", async (req, res) => {
     `;
   });
 
-  html += `
+  html+=`
   </div>
 
   <center>
-    <a href="/analytics"><button>📊 Analytics</button></a>
+    <a href="/dashboard"><button>⬅ Back</button></a>
   </center>
 
   <script>
@@ -214,9 +215,9 @@ app.get("/journals", async (req, res) => {
 
 /* ANALYTICS */
 
-app.get("/analytics", (req, res) => {
-  res.send(`
-<h1 style="text-align:center">📊 Analytics</h1>
+app.get("/analytics",(req,res)=>{
+res.send(`
+<h1 style="text-align:center">📊 Mood Analytics</h1>
 <canvas id="c"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -228,7 +229,7 @@ fetch('/api/journal/all')
 new Chart(document.getElementById("c"),{
 type:'line',
 data:{
-labels:d.map((_,i)=>i+1),
+labels:d.map((_,i)=>"Entry "+(i+1)),
 datasets:[{label:'Mood',data:d.map(x=>x.mood)}]
 }
 })
@@ -237,9 +238,54 @@ datasets:[{label:'Mood',data:d.map(x=>x.mood)}]
 `);
 });
 
+/* 🌬️ BREATHING TOOL */
+
+app.get("/breathing",(req,res)=>{
+res.send(`
+<html>
+<head>
+<style>
+body{
+background:#121212;
+color:white;
+text-align:center;
+font-family:sans-serif;
+}
+
+#circle{
+width:120px;
+height:120px;
+border-radius:50%;
+background:#6c63ff;
+margin:100px auto;
+animation:breathe 8s infinite;
+}
+
+@keyframes breathe{
+0%{transform:scale(1);}
+50%{transform:scale(1.5);}
+100%{transform:scale(1);}
+}
+</style>
+</head>
+
+<body>
+<h1>🌬️ Breathing Exercise</h1>
+<p>Inhale → Hold → Exhale</p>
+
+<div id="circle"></div>
+
+<br><br>
+<a href="/dashboard"><button>⬅ Back</button></a>
+
+</body>
+</html>
+`);
+});
+
 /* ROUTES */
 
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/journal", require("./routes/journal"));
 
-app.listen(5000, "0.0.0.0", () => console.log("Server running"));
+app.listen(5000,"0.0.0.0",()=>console.log("Server running"));
